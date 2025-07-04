@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { View, Button, Image, StyleSheet, Text } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Button, Image, StyleSheet, Animated } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FaceDetector from 'expo-face-detector';
 
 export default function App() {
   const [image, setImage] = useState(null);
   const [faces, setFaces] = useState([]);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const translateXAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(0)).current;
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -37,28 +40,79 @@ export default function App() {
     console.log("Faces detected:", detection.faces);
   };
 
+  const punchFace = () => {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 0.8,
+          duration: 80,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateXAnim, {
+          toValue: -10,
+          duration: 80,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateYAnim, {
+          toValue: 5,
+          duration: 80,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 1.2,
+          duration: 80,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateXAnim, {
+          toValue: 10,
+          duration: 80,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateYAnim, {
+          toValue: -5,
+          duration: 80,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 80,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateXAnim, {
+          toValue: 0,
+          duration: 80,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateYAnim, {
+          toValue: 0,
+          duration: 80,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  };
+
   return (
     <View style={styles.container}>
       <Button title="Pick a Photo" onPress={pickImage} />
       {image && (
         <>
-          <Image source={{ uri: image }} style={styles.image} />
-          <View style={styles.overlay}>
-            {faces.map((face, index) => (
-              <View
-                key={index}
-                style={{
-                  position: 'absolute',
-                  left: face.bounds.origin.x,
-                  top: face.bounds.origin.y,
-                  width: face.bounds.size.width,
-                  height: face.bounds.size.height,
-                  borderWidth: 2,
-                  borderColor: 'red'
-                }}
-              />
-            ))}
-          </View>
+          <Animated.View
+            style={{
+              transform: [
+                { scale: scaleAnim },
+                { translateX: translateXAnim },
+                { translateY: translateYAnim }
+              ]
+            }}
+          >
+            <Image source={{ uri: image }} style={styles.image} />
+          </Animated.View>
+          <Button title="Punch!" onPress={punchFace} />
         </>
       )}
     </View>
@@ -76,10 +130,5 @@ const styles = StyleSheet.create({
     height: 300,
     marginTop: 20,
     borderRadius: 10,
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
   },
 });
